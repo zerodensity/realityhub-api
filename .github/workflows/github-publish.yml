@@ -1,0 +1,22 @@
+name: Publish Package to Github Packages
+
+on:
+  release:
+    types: [created]
+  push:
+    branches: [main]
+
+jobs:
+  publish-gpr:
+    name: Publish Job
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 14
+          registry-url: https://npm.pkg.github.com/
+      - run: npm ci
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
