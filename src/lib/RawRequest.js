@@ -14,9 +14,28 @@
 // You should have received a copy of the GNU General Public License
 // along with realityhub-api. If not, see <https://www.gnu.org/licenses/>.
 
-module.exports = {
-  BrokerBase: require('./lib/BrokerBase'),
-  BrokerClient: require('./lib/BrokerClient'),
-  BrokerError: require('./lib/BrokerError'),
-  RawRequest: require('./lib/RawRequest'),
-};
+class RawRequest {
+  setCallback(callback) {
+    if (typeof callback !== 'function') {
+      throw new Error('callback must be a function.');
+    }
+
+    this.callback = callback;
+  }
+
+  setInstigatorId(value) {
+    this.instigatorId = value;
+  }
+
+  getInstigatorId() {
+    return this.instigatorId;
+  }
+
+  call(...args) {
+    if (this.callback) {
+      return this.callback(...args);
+    }
+  }
+}
+
+module.exports = RawRequest;

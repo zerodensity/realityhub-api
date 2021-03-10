@@ -1,8 +1,23 @@
-// Copyright 2019-2020 Zero Density, Inc. All Rights Reserved.
+// Copyright (c) 2019-2021 Zero Density Inc.
+//
+// This file is part of realityhub-api.
+//
+// realityhub-api is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License version 2, as published by 
+// the Free Software Foundation.
+//
+// realityhub-api is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with realityhub-api. If not, see <https://www.gnu.org/licenses/>.
 
 const { v4: uuid } = require('uuid');
 const BrokerBase = require('./BrokerBase.js');
 const BrokerError = require('./BrokerError.js');
+const RawRequest = require('./RawRequest.js');
 const consoleLogger = require('./consoleLogger.js');
 const onceMultiple = require('./onceMultiple.js');
 
@@ -108,10 +123,10 @@ module.exports = class BrokerClient extends BrokerBase {
       url = { hostname: options.host, port: options.port };
     }
 
-    const webSocketURL = url.port 
-      ? `ws://${url.hostname}:${url.port}${this.webSocketURL}` 
+    const webSocketURL = url.port
+      ? `ws://${url.hostname}:${url.port}${this.webSocketURL}`
       : `ws://${url.hostname}${this.webSocketURL}`;
-  
+
     this.socket = new ws(webSocketURL);
     this.addSocketListeners();
   }
@@ -210,20 +225,20 @@ module.exports = class BrokerClient extends BrokerBase {
       message = JSON.parse(rawMessage);
       const socket = this.isDuplicate ? this.parent.getSocket() : this.socket;
 
-      switch(message.type) {
+      switch (message.type) {
         case 'response': {
           this.emit(`response::${message.requestId}`, message);
 
           // Send the response to other duplicates (if we are parent)
           if (!this.isDuplicate) {
             for (const duplicate of this.duplicates) {
-              duplicate.handleMessage(rawMessage);              
+              duplicate.handleMessage(rawMessage);
             }
           }
 
           break;
         }
-        
+
         case 'event': {
           // Run previously registered event handlers
           for (const [subscribedEvent, entries] of this.events.entries()) {
@@ -245,7 +260,7 @@ module.exports = class BrokerClient extends BrokerBase {
           // Send the event to other duplicates (if we are parent)
           if (!this.isDuplicate) {
             for (const duplicate of this.duplicates) {
-              duplicate.handleMessage(rawMessage);              
+              duplicate.handleMessage(rawMessage);
             }
           }
 
@@ -272,10 +287,10 @@ module.exports = class BrokerClient extends BrokerBase {
             }
 
             await this.sendResponse(
-              socket, 
-              message, 
-              false, 
-              [{ error: `${message.eventName} sent to ${this.moduleName}. This is probably a mistake.`}],
+              socket,
+              message,
+              false,
+              [{ error: `${message.eventName} sent to ${this.moduleName}. This is probably a mistake.` }],
             );
           }
 
@@ -302,10 +317,10 @@ module.exports = class BrokerClient extends BrokerBase {
             }
 
             await this.sendResponse(
-              socket, 
-              message, 
-              false, 
-              [{ error: `${message.eventName} sent to ${this.moduleName}. This is probably a mistake.`}],
+              socket,
+              message,
+              false,
+              [{ error: `${message.eventName} sent to ${this.moduleName}. This is probably a mistake.` }],
             );
           }
 
@@ -318,7 +333,7 @@ module.exports = class BrokerClient extends BrokerBase {
           if (!this.isDuplicate && message.targetModuleName !== this.moduleName) {
             for (const duplicate of this.duplicates) {
               if (duplicate.moduleName === message.targetModuleName) {
-                duplicate.handleMessage(rawMessage);                
+                duplicate.handleMessage(rawMessage);
                 return;
               }
             }
@@ -342,9 +357,9 @@ module.exports = class BrokerClient extends BrokerBase {
         default: {
           if (!this.apiHandlers.has(message.type)) {
             await this.sendResponse(
-              socket, 
-              message, 
-              false, 
+              socket,
+              message,
+              false,
               [{ error: `There is no handler registered for this type of message: ${message.type}` }],
             );
             return;
@@ -353,7 +368,14 @@ module.exports = class BrokerClient extends BrokerBase {
           const { messageHandler, relay } = this.apiHandlers.get(message.type);
 
           try {
-            const responseMessage = await messageHandler(...message.data);
+            let responseMessage = await messageHandler(...message.data);
+
+            if (responseMessage instanceof RawRequest) {
+              const rawRequest = responseMessage;
+              rawRequest.setInstigatorId(message.instigatorId);
+              responseMessage = await rawRequest.call(...message.data);
+            }
+
             await this.sendResponse(socket, message, true, responseMessage, relay);
           } catch (ex) {
             if (ex instanceof BrokerError) {
@@ -369,7 +391,7 @@ module.exports = class BrokerClient extends BrokerBase {
           break;
         }
       }
-    } catch(ex) {
+    } catch (ex) {
       if (ex.code === 'TIMEOUT') {
         console.warn('Message timed out.');
         console.log(message);
@@ -402,17 +424,17 @@ module.exports = class BrokerClient extends BrokerBase {
     if (socket.readyState !== ws.OPEN) {
       try {
         await onceMultiple(this, ['connect'], webSocketMessage.timeout || this.messageTimeout);
-      } catch(ex) {
+      } catch (ex) {
         console.error(`Timeout: Socket is not ready`);
         throw ex;
       }
     }
 
     let ret;
-    
+
     try {
       ret = super.sendMessage(webSocketMessage, socket);
-    } catch(ex) {
+    } catch (ex) {
       console.error(`BrokerBase::sendMessage throwed an exception`);
       throw ex;
     }
@@ -471,7 +493,7 @@ module.exports = class BrokerClient extends BrokerBase {
       this.emit('connect');
 
       if (this.isDuplicate) {
-        await this.ping()
+        await this.ping();
       }
 
       for (const registrar of this.registrars) {
@@ -635,14 +657,14 @@ module.exports = class BrokerClient extends BrokerBase {
    *   })
    *   .catch((ex) => console.trace(ex));
    * @returns {Promise}
-   */ 
-  async registerAPIHandlers(handlers, context = null, remote = 'hub.core') { 
-    for (const [handlerName, handler] of Object.entries(handlers)) { 
-      this.registerAPIHandler(handlerName, handler.bind(context)); 
-    } 
+   */
+  async registerAPIHandlers(handlers, context = null, remote = 'hub.core') {
+    for (const [handlerName, handler] of Object.entries(handlers)) {
+      this.registerAPIHandler(handlerName, handler.bind(context));
+    }
 
-    return this.registerHandlersToRemote(remote); 
-  } 
+    return this.registerHandlersToRemote(remote);
+  }
 
   /**
    * Third-party modules can use this method to initialize a BrokerClient

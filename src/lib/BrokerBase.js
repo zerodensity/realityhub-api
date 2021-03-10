@@ -1,4 +1,18 @@
-// Copyright 2019-2020 Zero Density, Inc. All Rights Reserved.
+// Copyright (c) 2019-2021 Zero Density Inc.
+//
+// This file is part of realityhub-api.
+//
+// realityhub-api is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License version 2, as published by 
+// the Free Software Foundation.
+//
+// realityhub-api is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with realityhub-api. If not, see <https://www.gnu.org/licenses/>.
 
 const { v4: uuid } = require('uuid');
 const EventEmitter = require('events');
@@ -21,6 +35,170 @@ module.exports = class BrokerBase extends EventEmitter {
     this.initProxy();
   }
 
+  getMethodProxy(vendorName, moduleName, options) {
+    options = {
+      timeout: 2000,
+      excludedClients: [],
+      ...options,
+    };
+
+    return new Proxy({}, {
+      get: (_, methodName) => {
+        if (methodName === 'emit' && this.moduleName !== `${vendorName}.${moduleName}`) {
+          throw new Error('A module can only emit its own events.');
+        }
+
+        return (...args) => {
+          switch (methodName) {
+            case 'emit': {
+              this.emitMessage(args, vendorName, moduleName, options);
+              break;
+            }
+
+            case 'on': {
+              const eventName = args.shift();
+              const eventHandler = args.shift();
+
+              if (typeof eventName !== 'string') {
+                throw new Error('eventName must be a string');
+              }
+
+              if (typeof eventHandler !== 'function') {
+                throw new Error('eventHandler must be a function');
+              }
+
+              const fullyQualifiedName = `${vendorName}.${moduleName}.${eventName}`;
+
+              this
+                .subscribeToAPIEvent(fullyQualifiedName, eventHandler)
+                .catch((err) => {
+                  console.error(`Couldn't subscribe to ${fullyQualifiedName}`);
+
+                  if (err.code !== 'TIMEOUT') {
+                    console.trace(err);
+                  }
+                });
+
+              break;
+            }
+
+            case 'once': {
+              const eventName = args.shift();
+              const eventHandler = args.shift();
+
+              /**
+               * If the subscribed event is not emitted within the given timeout then the
+               * event handler will be removed automatically to prevent memory leak.
+               * If a timeout is not provided by caller than a default timeout of 5 minutes is set.
+               */
+              const timeout = args.shift() || 60 * 1000 * 5;
+
+              if (typeof eventName !== 'string') {
+                throw new Error('eventName must be a string');
+              }
+
+              if (typeof eventHandler !== 'function') {
+                throw new Error('eventHandler must be a function');
+              }
+
+              if (typeof timeout !== 'number' || isNaN(timeout)) {
+                throw new Error('timeout must be a number');
+              }
+
+              const fullyQualifiedName = `${vendorName}.${moduleName}.${eventName}`;
+
+              this
+                .subscribeToAPIEvent(fullyQualifiedName, eventHandler, { once: true })
+                .catch((err) => {
+                  console.error(`Couldn't subscribe to ${fullyQualifiedName}`);
+
+                  if (err.code !== 'TIMEOUT') {
+                    console.trace(err);
+                  }
+                });
+              break;
+            }
+
+            case 'off': {
+              const eventName = args.shift();
+              const eventHandler = args.shift();
+              const fullyQualifiedName = `${vendorName}.${moduleName}.${eventName}`;
+
+              if (typeof eventName !== 'string') {
+                throw new Error('eventName must be a string');
+              }
+
+              if (eventHandler && typeof eventHandler !== 'function') {
+                throw new Error('eventHandler must be a function');
+              }
+
+              this
+                .unsubscribeFromAPIEvent(fullyQualifiedName, eventHandler)
+                .catch((err) => {
+                  console.error(`Couldn't unsubscribe from ${fullyQualifiedName}`);
+
+                  if (err.code !== 'TIMEOUT') {
+                    console.trace(err);
+                  }
+                });
+
+              break;
+            }
+
+            case 'callTimeout': {
+              const timeout = args[0];
+
+              if (typeof timeout !== 'number') {
+                throw new Error('callTimeout: timeout is required.');
+              }
+
+              const clonedOptions = JSON.parse(JSON.stringify(options));
+              clonedOptions.timeout = timeout;
+              return this.getMethodProxy(vendorName, moduleName, clonedOptions);
+            }
+
+            case 'excludeClients': {
+              const excludedClients = args[0] || [];
+
+              if (!(excludedClients instanceof Array)) {
+                throw new Error('excludedClients requires 1 parameter: an array of strings');
+              }
+
+              const clonedOptions = JSON.parse(JSON.stringify(options));
+              clonedOptions.excludedClients = clonedOptions.excludedClients.concat(excludedClients);
+              return this.getMethodProxy(vendorName, moduleName, clonedOptions);
+            }
+
+            default: {
+              return this.sendMessage({
+                data: args,
+                timeout: options.timeout,
+                type: `${vendorName}.${moduleName}.${methodName}`,
+                targetModuleName: `${vendorName}.${moduleName}`,
+                excludedClients: options.excludedClients,
+              });
+            }
+          }
+        };
+      },
+      set: (_, methodName, handler) => {
+        if (this.moduleName !== `${vendorName}.${moduleName}`) {
+          throw new Error('Cannot register methods to other modules.');
+        }
+
+        if (typeof handler !== 'function') {
+          throw new Error('Handler must be a function.');
+        }
+
+        if (['emit', 'on', 'off'].includes(methodName)) {
+          throw new Error(`${methodName} is a reserved method name.`);
+        }
+
+        return this.registerAPIHandler(methodName, handler);
+      },
+    });
+  }
+
   /**
    * Initializes the Proxy object.
    * @private
@@ -32,156 +210,7 @@ module.exports = class BrokerBase extends EventEmitter {
       get: (_, vendorName) => {
         return new Proxy({}, {
           get: (_, moduleName) => {
-            return new Proxy({}, {
-              get: (_, methodName) => {
-                if (methodName === 'emit' && this.moduleName !== `${vendorName}.${moduleName}`) {
-                  throw new Error('A module can only emit its own events.');
-                }
-
-                return (...args) => {
-                  switch (methodName) {
-                    case 'emit': {
-                      this.emitMessage(args, vendorName, moduleName);
-                      break;
-                    }
-
-                    case 'on': {
-                      const eventName = args.shift();
-                      const eventHandler = args.shift();
-
-                      if (typeof eventName !== 'string') {
-                        throw new Error('eventName must be a string');
-                      }
-
-                      if (typeof eventHandler !== 'function') {
-                        throw new Error('eventHandler must be a function');
-                      }
-
-                      const fullyQualifiedName = `${vendorName}.${moduleName}.${eventName}`;
-
-                      this
-                        .subscribeToAPIEvent(fullyQualifiedName, eventHandler)
-                        .catch((err) => {
-                          console.error(`Couldn't subscribe to ${fullyQualifiedName}`);
-
-                          if (err.code !== 'TIMEOUT') {
-                            console.trace(err);
-                          }
-                        });
-
-                      break;
-                    }
-
-                    case 'once': {
-                      const eventName = args.shift();
-                      const eventHandler = args.shift();
-
-                      /**
-                       * If the subscribed event is not emitted within the given timeout then the
-                       * event handler will be removed automatically to prevent memory leak.
-                       * If a timeout is not provided by caller than a default timeout of 5 minutes is set.
-                       */
-                      const timeout = args.shift() || 60 * 1000 * 5;
-
-                      if (typeof eventName !== 'string') {
-                        throw new Error('eventName must be a string');
-                      }
-
-                      if (typeof eventHandler !== 'function') {
-                        throw new Error('eventHandler must be a function');
-                      }
-
-                      if (typeof timeout !== 'number' || isNaN(timeout)) {
-                        throw new Error('timeout must be a number');
-                      }
-
-                      const fullyQualifiedName = `${vendorName}.${moduleName}.${eventName}`;
-
-                      this
-                        .subscribeToAPIEvent(fullyQualifiedName, eventHandler, { once: true })
-                        .catch((err) => {
-                          console.error(`Couldn't subscribe to ${fullyQualifiedName}`);
-
-                          if (err.code !== 'TIMEOUT') {
-                            console.trace(err);
-                          }
-                        });
-                      break;
-                    }
-
-                    case 'off': {
-                      const eventName = args.shift();
-                      const eventHandler = args.shift();
-                      const fullyQualifiedName = `${vendorName}.${moduleName}.${eventName}`;
-
-                      if (typeof eventName !== 'string') {
-                        throw new Error('eventName must be a string');
-                      }
-
-                      if (eventHandler && typeof eventHandler !== 'function') {
-                        throw new Error('eventHandler must be a function');
-                      }
-
-                      this
-                        .unsubscribeFromAPIEvent(fullyQualifiedName, eventHandler)
-                        .catch((err) => {
-                          console.error(`Couldn't unsubscribe from ${fullyQualifiedName}`);
-
-                          if (err.code !== 'TIMEOUT') {
-                            console.trace(err);
-                          }
-                        });
-
-                      break;
-                    }
-
-                    case 'callTimeout': {
-                      const timeout = args[0];
-
-                      if (typeof timeout !== 'number') {
-                        throw new Error('callTimeout: timeout is required.');
-                      }
-
-                      return new Proxy({}, {
-                        get: (_, functionName) => {
-                          return (...functionArgs) => {
-                            return this.sendMessage({
-                              timeout,
-                              data: functionArgs,
-                              type: `${vendorName}.${moduleName}.${functionName}`,
-                              targetModuleName: `${vendorName}.${moduleName}`,
-                            });
-                          }
-                        },
-                      })
-                    }
-
-                    default: {
-                      return this.sendMessage({
-                        data: args,
-                        type: `${vendorName}.${moduleName}.${methodName}`,
-                        targetModuleName: `${vendorName}.${moduleName}`,
-                      });
-                    }
-                  }
-                };
-              },
-              set: (_, methodName, handler) => {
-                if (this.moduleName !== `${vendorName}.${moduleName}`) {
-                  throw new Error('Cannot register methods to other modules.');
-                }
-
-                if (typeof handler !== 'function') {
-                  throw new Error('Handler must be a function.');
-                }
-
-                if (['emit', 'on', 'off'].includes(methodName)) {
-                  throw new Error(`${methodName} is a reserved method name.`);
-                }
-
-                return this.registerAPIHandler(methodName, handler);
-              },
-            });
+            return this.getMethodProxy(vendorName, moduleName);
           },
           set: (_, moduleName, api) => {
             if (this.moduleName !== `${vendorName}.${moduleName}`) {
@@ -201,7 +230,7 @@ module.exports = class BrokerBase extends EventEmitter {
                 throw new Error(`${methodName} is a reserved method name.`);
               }
 
-              this.registerAPIHandler(methodName, handler);                
+              this.registerAPIHandler(methodName, handler);
             }
 
             return true;
@@ -228,10 +257,11 @@ module.exports = class BrokerBase extends EventEmitter {
   sendResponse(socket, message, success, data = [], relayedMessage = false) {
     if (!socket) return;
 
-    const { id: requestId, moduleName: targetModuleName, timeout } = message;
+    const { id: requestId, moduleName: targetModuleName, timeout, instigatorId } = message;
     const websocketMessage = {
       type: 'response',
-      targetModuleName, 
+      targetModuleName,
+      instigatorId,
       requestId,
       timeout,
       success,
@@ -348,8 +378,6 @@ module.exports = class BrokerBase extends EventEmitter {
     }
 
     message.time = new Date().valueOf();
-    message.data = message.data;
-
     const packet = JSON.stringify(message);
 
     if (packet.length > MAX_WS_PACKET_SIZE) {
@@ -401,7 +429,7 @@ module.exports = class BrokerBase extends EventEmitter {
    * @param {string} vendorName 
    * @param {string} moduleName 
    */
-  emitMessage(args, vendorName, moduleName) {
+  emitMessage(args, vendorName, moduleName, options = {}) {
     const eventName = args.shift();
 
     if (typeof eventName !== 'string') {
@@ -411,10 +439,11 @@ module.exports = class BrokerBase extends EventEmitter {
     const fullyQualifiedName = `${vendorName}.${moduleName}.${eventName}`;
 
     this.sendMessage({
-        type: 'event',
-        eventName: fullyQualifiedName,
-        data: args,
-      })
+      type: 'event',
+      eventName: fullyQualifiedName,
+      data: args,
+      excludedClients: options.excludedClients || [],
+    })
       .catch((err) => {
         console.error(`Couldn't emit ${fullyQualifiedName}`);
 
@@ -424,5 +453,7 @@ module.exports = class BrokerBase extends EventEmitter {
       });
   }
 
-  destroy() {}
+  destroy() {
+    this.removeAllListeners();
+  }
 }
