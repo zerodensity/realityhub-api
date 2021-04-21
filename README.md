@@ -20,7 +20,9 @@ The client can be bundled for browsers with a bundling tool (e.g. rollup).
 const { BrokerClient } = require('@zerodensity/realityhub-api');
 
 BrokerClient.initModule({
-  moduleName: '<vendor name>.<module name>',
+  menuTitle: '<menu title>',
+  clientModuleName: '<vendor name>.<your client module name>',
+  moduleName: '<vendor name>.<your backend module name>',
   serverURL: '<your backend module>',
   hub: {
     host: '127.0.0.1',
