@@ -19,7 +19,7 @@ const EventEmitter = require('events');
 const BrokerError = require('./BrokerError.js');
 const onceMultiple = require('./onceMultiple.js');
 
-const MAX_WS_PACKET_SIZE = 1 /*MB*/ * 1024 * 1024;
+const DEFAULT_MAX_WS_PACKET_SIZE = 4 /*MB*/ * 1024 * 1024;
 
 module.exports = class BrokerBase extends EventEmitter {
   constructor(params) {
@@ -32,6 +32,7 @@ module.exports = class BrokerBase extends EventEmitter {
     this.apiHandlers = new Map();
 
     this.messageTimeout = 2000;
+    this.maxPacketSize = params.maxPacketSize || DEFAULT_MAX_WS_PACKET_SIZE;
     this.initProxy();
   }
 
@@ -380,7 +381,7 @@ module.exports = class BrokerBase extends EventEmitter {
     message.time = new Date().valueOf();
     const packet = JSON.stringify(message);
 
-    if (packet.length > MAX_WS_PACKET_SIZE) {
+    if (packet.length > this.maxPacketSize) {
       this.logger.trace(new Error('MAX_WS_PACKET_SIZE'));
     }
 
