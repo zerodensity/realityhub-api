@@ -23,12 +23,12 @@ class RawRequest {
     this.callback = callback;
   }
 
-  setInstigatorId(value) {
-    this.instigatorId = value;
+  setAncillaryData(ancillaryData) {
+    this.ancillaryData = ancillaryData || {};
   }
 
-  getInstigatorId() {
-    return this.instigatorId;
+  getAncillaryData() {
+    return this.ancillaryData || {};
   }
 
   call(...args) {
