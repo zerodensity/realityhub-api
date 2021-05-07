@@ -32,7 +32,29 @@ module.exports = class BrokerBase extends EventEmitter {
     this.apiHandlers = new Map();
 
     this.messageTimeout = 2000;
-    this.maxPacketSize = params.maxPacketSize || DEFAULT_MAX_WS_PACKET_SIZE;
+
+    let maxPacketSizeRead = DEFAULT_MAX_WS_PACKET_SIZE;
+    
+    try {
+      if (typeof window != 'undefined' && typeof localStorage != 'undefined') {
+        maxPacketSizeRead = Number(localStorage.getItem('MAX_WS_PACKET_SIZE')) || NaN;
+      } else if (process && process.env) {
+        maxPacketSizeRead = Number(process.env.MAX_WS_PACKET_SIZE) || NaN;
+      }
+
+      maxPacketSizeRead = Math.max(maxPacketSizeRead, 1024000);
+    } catch (ex) {
+      const logger = this.logger || console;
+      logger.error(`Cannot read maxPacketSize from either localStorage or env, defaulting to ${maxPacketSizeRead}`)
+    }
+
+    this.maxPacketSize = maxPacketSizeRead || DEFAULT_MAX_WS_PACKET_SIZE;
+    
+    if(this.maxPacketSize !== DEFAULT_MAX_WS_PACKET_SIZE) {
+      const logger = this.logger || console;
+      logger.log(`BrokerBase is created with maxPacketSize: ${this.maxPacketSize}`);
+    }
+
     this.initProxy();
   }
 
