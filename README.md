@@ -1,6 +1,6 @@
-# Javascript Client for Reality Hub API
+# Javascript Client for RealityHub API
 
-A helper module to connect third-party modules to Reality Hub.
+A helper module to connect third-party modules to RealityHub.
 
 ## Installation
 
@@ -29,7 +29,7 @@ BrokerClient.initModule({
     port: 3000,
   },
 }).then((brokerClient) => {
-  // brokerClient is connected to Reality Hub and ready to use
+  // brokerClient is connected to RealityHub and ready to use
 });
 ```
 
@@ -83,7 +83,7 @@ brokerClient.api.hub.reality_world.listEngines()
   .catch((ex) => console.trace(ex));
 ```
 
-### Registering Your Own Methods to Reality Hub
+### Registering Your Own Methods to RealityHub
 
 ```js
 // server.js
@@ -162,6 +162,6 @@ brokerClient.api.exampleCompany.exampleModule.on('randomnumber', (randomNumber) 
 
 ### Questions and Feedback
 
-We have a growing community. You can join to [Reality Hub User Group on Facebook](https://www.facebook.com/groups/realityengine).
+We have a growing community. You can join to [RealityHub User Group on Facebook](https://www.facebook.com/groups/realityengine).
 
 You are welcome to open an issue if you have found a bug or have a feature request.

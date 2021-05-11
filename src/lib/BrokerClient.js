@@ -635,7 +635,7 @@ module.exports = class BrokerClient extends BrokerBase {
   }
 
   /** 
-   * Register a module's API handlers to Reality Hub
+   * Register a module's API handlers to RealityHub
    * @async
    * @param {Object.<string, function>} handlers Key will be registered to the API tree. 
    * @param {*} [context=null] Handlers' `this` will be set to this context.
@@ -668,7 +668,7 @@ module.exports = class BrokerClient extends BrokerBase {
 
   /**
    * Third-party modules can use this method to initialize a BrokerClient
-   * and register themselves to Reality Hub.
+   * and register themselves to RealityHub.
    * @async
    * @static
    * @param {{ clientModuleName?: string, menuTitle?: string, moduleName: string, serverURL: string, webSocketURL?: string, hub: {host: string, port: number }}} params Parameters
@@ -676,14 +676,14 @@ module.exports = class BrokerClient extends BrokerBase {
    * @param {string} [params.menuTitle] Menu Title
    * @param {string} params.moduleName Backend Module Name (`<vendor>.<backend module name>`)
    * @param {string} params.serverURL Your module has to serve your client files over HTTP or HTTPS.
-   * Reality Hub will look for an `index.js` file in this path. This script file will be imported
-   * by Reality Hub's `index.html` via a `<script type="module">` tag. Relative paths in your scripts
-   * will be proxied by Reality Hub.
-   * @param {string} [params.webSocketURL="/core"] WebSocket URL to connect. Reality Hub's API Server 
+   * RealityHub will look for an `index.js` file in this path. This script file will be imported
+   * by RealityHub's `index.html` via a `<script type="module">` tag. Relative paths in your scripts
+   * will be proxied by RealityHub.
+   * @param {string} [params.webSocketURL="/core"] WebSocket URL to connect. RealityHub's API Server 
    * is serving at `/core` by default. *(Default: /core)* 
-   * @param {{ host: string, port: number }} params.hub Reality Hub connection parameters
-   * @param {string} params.hub.host Reality Hub hostname or IP address
-   * @param {string} params.hub.port Reality Hub port
+   * @param {{ host: string, port: number }} params.hub RealityHub connection parameters
+   * @param {string} params.hub.host RealityHub hostname or IP address
+   * @param {string} params.hub.port RealityHub port
    * @returns {Promise<BrokerClient, Error>} A BrokerClient instance.
    */
   static async initModule(params) {
