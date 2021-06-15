@@ -535,10 +535,10 @@ module.exports = class BrokerClient extends BrokerBase {
   /**
    * @private
    */
-  onClose() {
+  onClose(e) {
     if (this.connected) {
       this.connected = false;
-      this.emit('disconnect');
+      this.emit('disconnect', e);
       this.events.delete(`${this.serverModuleName}.moduleconnect`);
 
       if (!this.isDuplicate) {
