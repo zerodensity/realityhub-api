@@ -32,6 +32,21 @@ module.exports = class BrokerBase extends EventEmitter {
     this.apiHandlers = new Map();
 
     this.messageTimeout = 2000;
+    
+    this.overridenTimeout = NaN; // NaN = use the implementation
+
+    try {
+      if (typeof window != 'undefined' && typeof localStorage != 'undefined') {
+        this.overridenTimeout = Number(localStorage.getItem('BROKER_TIMEOUT')) || NaN;
+      } else if (process && process.env) {
+        this.overridenTimeout = Number(process.env.BROKER_TIMEOUT) || NaN;
+      }
+    } catch (ex) {}
+    
+    if (this.overridenTimeout) {
+      const logger = this.logger || console;
+      logger.warn(`Broker Timeout is overriden to ${this.overridenTimeout} milliseconds!`);
+    }
 
     let maxPacketSizeRead = DEFAULT_MAX_WS_PACKET_SIZE;
     
@@ -413,7 +428,7 @@ module.exports = class BrokerBase extends EventEmitter {
       let responseMessage;
 
       try {
-        responseMessage = await onceMultiple(this, [`response::${message.id}`], message.timeout || this.messageTimeout);
+        responseMessage = await onceMultiple(this, [`response::${message.id}`], this.overridenTimeout || message.timeout || this.messageTimeout);
       } catch (ex) {
         const logger = this.logger || console;
         logger.debug(`${this.moduleName} failed to send message ${message.type} to ${message.targetModuleName || ''}`);
