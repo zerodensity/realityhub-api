@@ -372,7 +372,12 @@ module.exports = class BrokerClient extends BrokerBase {
 
             if (responseMessage instanceof RawRequest) {
               const rawRequest = responseMessage;
-              rawRequest.setAncillaryData(message.ancillaryData);
+              rawRequest.setAncillaryData({
+                ...message.ancillaryData,
+                caller: {
+                  moduleName: message.moduleName,
+                },
+              });
               responseMessage = await rawRequest.call(...message.data);
             }
 
