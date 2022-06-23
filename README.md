@@ -71,10 +71,10 @@ brokerClient.api.hub.reality_world.setNodeProperty({
 // subscribe to the event. The engine name and event name is delitimed by 2 colons.
 
 brokerClient.api.hub.reality_world.listEngines()
-  .then((engines) => engines[0].name)
-  .then((engineName) => {
-    brokerClient.api.hub.reality_world.on(`nodepropertyupdate::${engineName}`, (eventData) => {
-      if (eventData.NodePath !== 'Mixer Default') return;
+  .then((engines) => engines[0].id)
+  .then((engineId) => {
+    var nodeName = "Mixer_0";
+    brokerClient.api.hub.reality_world.on(`nodepropertyupdate::${engineId}::${nodeName}`, (eventData) => {
       if (eventData.property.PropertyPath !== 'Overlay Options//OverlayOpacity/0') return;
 
       console.log('New value of overlay opacity is', eventData.property.Value);
