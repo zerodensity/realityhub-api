@@ -33,6 +33,26 @@ BrokerClient.initModule({
 });
 ```
 
+### Listing the engines
+
+```js
+brokerClient.api.hub.reality_world.listEngines()
+  .then((engines) => {
+    console.log(engines);
+  })
+  .catch((ex) => console.trace(ex));
+```
+
+### Listing the nodes running on an engine
+
+```js
+brokerClient.api.hub.reality_world.getNodes(8 /* id of the engine */)
+  .then((nodes) => {
+    console.log(nodes);
+  })
+  .catch((ex) => console.trace(ex));
+```
+
 ### Calling a Reality Node's Function
 
 ```js
