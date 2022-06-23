@@ -87,14 +87,13 @@ brokerClient.api.hub.reality_world.setNodeProperty({
 ### Subscribing to Property Change Event
 
 ```js
-// nodepropertyupdate event has a special sytax. You have to supply an engine name in order to
-// subscribe to the event. The engine name and event name is delitimed by 2 colons.
+// nodepropertyupdate event has a special sytax. You have to supply an engine id and the node's path in order to
+// subscribe to its property change events. The engine id, event name and node path are delitimed by 2 colons.
 
 brokerClient.api.hub.reality_world.listEngines()
-  .then((engines) => engines[0].name)
-  .then((engineName) => {
-    brokerClient.api.hub.reality_world.on(`nodepropertyupdate::${engineName}`, (eventData) => {
-      if (eventData.NodePath !== 'Mixer Default') return;
+  .then((engines) => engines[0].id)
+  .then((engineId) => {
+    brokerClient.api.hub.reality_world.on(`nodepropertyupdate::${engineId}::Mixer_0`, (eventData) => {
       if (eventData.property.PropertyPath !== 'Overlay Options//OverlayOpacity/0') return;
 
       console.log('New value of overlay opacity is', eventData.property.Value);
