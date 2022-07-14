@@ -55,8 +55,27 @@ brokerClient.api.hub.reality_world.getNodes(8 /* id of the engine */)
 
 ### Calling a Reality Node's Function
 
+You can use `callNodeFunction(params[, engineIds])` to call a node function. `engineIds` is an array
+of engine IDs. If `engineIds` is not supplied then the function will be called on all the engines.
+
 ```js
-// Node_0's PLAY function is called
+/**
+ * @typedef FunctionProperty
+ * @type {object}
+ * @property {string} NodePath
+ * @property {string} PropertyPath
+ * @property {object} payload
+ * @property {*} payload.value
+ */
+
+/**
+ * Node_0's PLAY function is called
+ * @param {object} params
+ * @param {string} params.NodePath
+ * @param {string} params.PropertyPath
+ * @param {FunctionProperty[]} [params.functionProperties] - (optional)
+ * @param {number} [engineIds] - (optional)
+ */ 
 brokerClient.api.hub.reality_world.callNodeFunction({
   NodePath: 'Mixer Default',
   PropertyPath: 'Default//DoTransition/0',
@@ -74,7 +93,21 @@ brokerClient.api.hub.reality_world.callNodeFunction({
 
 ### Setting a Reality Node's Property Value
 
+You can use `setNodeProperty(params[, engineIds])` to set a node's property value. `engineIds` is an
+array of engine IDs. If `engineIds` not supplied then all of the engines will receive the set node
+property command.
+
 ```js
+/**
+ * @param {object} params
+ * @param {string} params.NodePath
+ * @param {string} params.PropertyPath
+ * @param {*} params.Value
+ * @param {number} [params.Delay=0] - (optional) Delay in seconds
+ * @param {number} [params.Duration=0] - (optional) Duration in seconds
+ * @param {Jump|Linear|EaseIn|EaseOut|EaseInOut} [params.InterpType=Jump] - (optional)
+ * @param {number} [engineIds] - (optional)
+ */
 brokerClient.api.hub.reality_world.setNodeProperty({
   NodePath: 'Mixer Default',
   PropertyPath: 'Overlay Options//OverlayOpacity/0',
