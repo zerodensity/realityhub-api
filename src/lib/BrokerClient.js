@@ -123,9 +123,11 @@ module.exports = class BrokerClient extends BrokerBase {
       url = { hostname: options.host, port: options.port };
     }
 
+    const scheme = url.protocol === 'https:' ? 'wss' : 'ws';
+
     const webSocketURL = url.port
-      ? `ws://${url.hostname}:${url.port}${this.webSocketURL}`
-      : `ws://${url.hostname}${this.webSocketURL}`;
+      ? `${scheme}://${url.hostname}:${url.port}${this.webSocketURL}`
+      : `${scheme}://${url.hostname}${this.webSocketURL}`;
 
     this.socket = new ws(webSocketURL);
     this.addSocketListeners();
