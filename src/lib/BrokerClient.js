@@ -89,11 +89,14 @@ module.exports = class BrokerClient extends BrokerBase {
    * @returns {Promise}
    */
   getConnectPromise() {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const looper = setInterval(() => {
         if (this.connected) {
           clearInterval(looper);
           resolve();
+        } else if (this.destroyed) {
+          clearInterval(looper);
+          reject(new Error('BrokerClient is destroyed'));
         }
       }, 0);
     });
@@ -210,6 +213,11 @@ module.exports = class BrokerClient extends BrokerBase {
     try {
       await this.handleMessage(event.data, this.socket);
     } catch (ex) {
+      if (this.errorEmittingEnabled) {
+        this.emit('error', ex);
+        return;
+      }
+      
       console.trace(ex);
     }
   }
@@ -249,7 +257,11 @@ module.exports = class BrokerClient extends BrokerBase {
                 try {
                   entry.eventHandler(...message.data);
                 } catch (ex) {
-                  this.logger.warn(ex);
+                  if (this.errorEmittingEnabled) {
+                    this.emit('error', ex);
+                  } else {
+                    this.logger.warn(ex);
+                  }
                 } finally {
                   if (entry.once) {
                     this.unsubscribeFromAPIEvent(subscribedEvent, entry.eventHandler);
@@ -399,6 +411,11 @@ module.exports = class BrokerClient extends BrokerBase {
         }
       }
     } catch (ex) {
+      if (this.errorEmittingEnabled) {
+        this.emit('error', ex);
+        return;
+      }
+
       if (ex.code === 'TIMEOUT') {
         console.warn('Message timed out.');
         console.log(message);
@@ -513,6 +530,11 @@ module.exports = class BrokerClient extends BrokerBase {
         }
       }
     } catch (ex) {
+      if (this.errorEmittingEnabled) {
+        this.emit('error', ex);
+        return;
+      }
+
       console.trace(ex.message);
     }
   }
@@ -527,7 +549,11 @@ module.exports = class BrokerClient extends BrokerBase {
     }
 
     if (!this.isDuplicate) {
-      this.logger.trace(err);
+      if (this.errorEmittingEnabled) {
+        this.emit('error', err);
+      } else {
+        this.logger.trace(err);
+      }
     }
 
     if (!this.isDuplicate) {
@@ -596,6 +622,11 @@ module.exports = class BrokerClient extends BrokerBase {
 
       return Promise.all(promises);
     } catch (ex) {
+      if (this.errorEmittingEnabled) {
+        this.emit('error', ex);
+        return;
+      }
+
       console.trace(ex.message);
     }
   }
@@ -637,6 +668,11 @@ module.exports = class BrokerClient extends BrokerBase {
         super.destroy();
       }
     } catch (ex) {
+      if (this.errorEmittingEnabled) {
+        this.emit('error', ex);
+        return;
+      }
+
       console.trace(ex.message);
     }
   }
@@ -674,6 +710,12 @@ module.exports = class BrokerClient extends BrokerBase {
   }
 
   /**
+   * @typedef {function} ErrorCallback
+   * @param {Error} error
+   * @param {BrokerClient} brokerClient
+   /
+
+  /**
    * Third-party modules can use this method to initialize a BrokerClient
    * and register themselves to RealityHub.
    * @async
@@ -691,11 +733,18 @@ module.exports = class BrokerClient extends BrokerBase {
    * @param {{ host: string, port: number }} params.hub RealityHub connection parameters
    * @param {string} params.hub.host RealityHub hostname or IP address
    * @param {string} params.hub.port RealityHub port
+   * @param {ErrorCallback} [params.onError] Error handler callback, BrokerClient will catch the errors if not specified
    * @returns {Promise<BrokerClient, Error>} A BrokerClient instance.
    */
   static async initModule(params) {
-    const { moduleName, serverURL, hub, webSocketURL = '/core', clientModuleName, menuTitle } = params;
+    const { moduleName, serverURL, hub, webSocketURL = '/core', clientModuleName, menuTitle, onError} = params;
     const hubClient = new BrokerClient({ moduleName, webSocketURL });
+
+    if (typeof onError === 'function') {
+      hubClient.on('error', (error) => {
+        onError(error, hubClient);
+      });
+    }
 
     hubClient.connect(hub);
     await hubClient.getConnectPromise();

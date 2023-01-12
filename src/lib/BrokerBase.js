@@ -34,6 +34,7 @@ module.exports = class BrokerBase extends EventEmitter {
     this.messageTimeout = 2000;
     
     this.overridenTimeout = NaN; // NaN = use the implementation
+    this.destroyed = false;
 
     try {
       if (typeof window != 'undefined' && typeof localStorage != 'undefined') {
@@ -71,6 +72,10 @@ module.exports = class BrokerBase extends EventEmitter {
     }
 
     this.initProxy();
+  }
+
+  get errorEmittingEnabled() {
+    return this.listeners('error').length > 0;
   }
 
   getMethodProxy(vendorName, moduleName, options) {
@@ -430,6 +435,11 @@ module.exports = class BrokerBase extends EventEmitter {
       try {
         responseMessage = await onceMultiple(this, [`response::${message.id}`], this.overridenTimeout || message.timeout || this.messageTimeout);
       } catch (ex) {
+        if (this.errorEmittingEnabled) {
+          this.emit('error', ex);
+          return;
+        }
+
         const logger = this.logger || console;
         logger.debug(`${this.moduleName} failed to send message ${message.type} to ${message.targetModuleName || ''}`);
         return;
@@ -483,6 +493,11 @@ module.exports = class BrokerBase extends EventEmitter {
       excludedClients: options.excludedClients || [],
     })
       .catch((err) => {
+        if (this.errorEmittingEnabled) {
+          this.emit('error', err);
+          return;
+        }
+
         console.error(`Couldn't emit ${fullyQualifiedName}`);
 
         if (err.code !== 'TIMEOUT') {
@@ -493,5 +508,6 @@ module.exports = class BrokerBase extends EventEmitter {
 
   destroy() {
     this.removeAllListeners();
+    this.destroyed = true;
   }
 }

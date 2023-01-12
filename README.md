@@ -28,6 +28,14 @@ BrokerClient.initModule({
     host: '127.0.0.1',
     port: 3000,
   },
+  // optional error handler
+  // brokerClient will log the error if not provided
+  onError: (error, brokerClient) => {
+    // you may destroy the instance (and retry calling initModule() later)
+    // brokerClient.destroy();
+    // it will try to recover otherwise
+    console.error(error.message);
+  }
 }).then((brokerClient) => {
   // brokerClient is connected to RealityHub and ready to use
 });
