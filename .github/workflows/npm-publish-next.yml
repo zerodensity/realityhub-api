@@ -1,8 +1,6 @@
-name: Publish Package to NPM
+name: Publish Package to NPM (tag next)
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
 
 jobs:
@@ -16,7 +14,6 @@ jobs:
           node-version: '18'
           registry-url: https://registry.npmjs.org/
       - run: npm ci
-      - run: npm publish
-      - run: npm publish --tag latest
+      - run: npm publish --tag next
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
