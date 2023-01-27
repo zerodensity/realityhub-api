@@ -113,6 +113,7 @@ module.exports = class BrokerClient extends BrokerBase {
    * @param {object} options Options
    * @param {string} options.host Hostname or IP of the target server.
    * @param {number} options.port WebSocket port of the target server.
+   * @param {string} options.url A full URL of the websocket router (alternative to host and port options)
    */
   connect(options) {
     if (this.isDuplicate) return;
@@ -122,6 +123,8 @@ module.exports = class BrokerClient extends BrokerBase {
 
     if (!options) {
       url = new URL(location.href);
+    } else if (options.url) {
+      url = new URL(options.url);
     } else {
       url = { hostname: options.host, port: options.port };
     }
@@ -733,6 +736,7 @@ module.exports = class BrokerClient extends BrokerBase {
    * @param {{ host: string, port: number }} params.hub RealityHub connection parameters
    * @param {string} params.hub.host RealityHub hostname or IP address
    * @param {string} params.hub.port RealityHub port
+   * @param {string} params.hub.url RealityHub websocket URL (alternative to host and port)
    * @param {ErrorCallback} [params.onError] Error handler callback, BrokerClient will catch the errors if not specified
    * @returns {Promise<BrokerClient, Error>} A BrokerClient instance.
    */

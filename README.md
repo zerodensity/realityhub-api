@@ -27,6 +27,8 @@ BrokerClient.initModule({
   hub: {
     host: '127.0.0.1',
     port: 3000,
+    // or alternatively, provide the websocket url
+    // url: http://127.0.0.1:3000/core
   },
   // optional error handler
   // brokerClient will log the error if not provided
