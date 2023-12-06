@@ -2,6 +2,10 @@
 
 A helper module to connect third-party modules to RealityHub.
 
+##  Support Requests
+
+This repository is for distribution only. For support please visit: [Zero Density Support](https://support.zerodensity.io).
+
 ## Installation
 
 ```bash
