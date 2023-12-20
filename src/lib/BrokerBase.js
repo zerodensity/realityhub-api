@@ -19,12 +19,20 @@ const EventEmitter = require('events');
 const BrokerError = require('./BrokerError.js');
 const onceMultiple = require('./onceMultiple.js');
 
-const DEFAULT_MAX_WS_PACKET_SIZE = 4 /*MB*/ * 1024 * 1024;
+const DEFAULT_MAX_WS_PACKET_SIZE = 20 /*MB*/ * 1024 * 1024;
 
+  /**
+   * BrokerBase constructor
+   * @param {object} params Parameters
+   * @param {string} [params.moduleName] Module name
+   * @param {number} [params.maxPacketSize] Maximum websocket packet size
+   * @param {Logger} [params.logger] Logger instance
+   */
 module.exports = class BrokerBase extends EventEmitter {
   constructor(params) {
     super();
     this.moduleName = params.moduleName;
+    this.maxPacketSize = params.maxPacketSize || DEFAULT_MAX_WS_PACKET_SIZE;
 
     this.logger = params.logger;
 
@@ -52,18 +60,16 @@ module.exports = class BrokerBase extends EventEmitter {
     
     try {
       if (typeof window != 'undefined' && typeof localStorage != 'undefined') {
-        maxPacketSizeRead = Number(localStorage.getItem('MAX_WS_PACKET_SIZE')) || NaN;
+        maxPacketSizeRead ||= Number(localStorage.getItem('MAX_WS_PACKET_SIZE'));
       } else if (process && process.env) {
-        maxPacketSizeRead = Number(process.env.MAX_WS_PACKET_SIZE) || NaN;
+        maxPacketSizeRead ||= Number(process.env.MAX_WS_PACKET_SIZE);
       }
-
-      maxPacketSizeRead = Math.max(maxPacketSizeRead, 1024000);
     } catch (ex) {
       const logger = this.logger || console;
       logger.error(`Cannot read maxPacketSize from either localStorage or env, defaulting to ${maxPacketSizeRead}`)
     }
 
-    this.maxPacketSize = maxPacketSizeRead || DEFAULT_MAX_WS_PACKET_SIZE;
+    this.maxPacketSize = Math.max(this.maxPacketSize, maxPacketSizeRead);
     
     if(this.maxPacketSize !== DEFAULT_MAX_WS_PACKET_SIZE) {
       const logger = this.logger || console;

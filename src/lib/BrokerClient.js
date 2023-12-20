@@ -36,6 +36,8 @@ module.exports = class BrokerClient extends BrokerBase {
    * BrokerClient constructor
    * @param {object} params Parameters
    * @param {string} params.webSocketURL WebSocket URL
+   * @param {string} [params.moduleName] Module name
+   * @param {number} [params.maxPacketSize] Maximum websocket packet size
    * @param {Logger} [params.logger] Logger instance
    * @param {boolean} [params.isDuplicate] [Private property, used internally]
    * @param {boolean} [params.parent] [Private property, used internally]
