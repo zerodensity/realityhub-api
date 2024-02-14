@@ -19,7 +19,7 @@ const EventEmitter = require('events');
 const BrokerError = require('./BrokerError.js');
 const onceMultiple = require('./onceMultiple.js');
 
-const DEFAULT_MAX_WS_PACKET_SIZE = 20 /*MB*/ * 1024 * 1024;
+const DEFAULT_MAX_WS_PACKET_SIZE = 50 /*MB*/ * 1024 * 1024;
 
   /**
    * BrokerBase constructor
