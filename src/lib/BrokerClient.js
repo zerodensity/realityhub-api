@@ -62,6 +62,7 @@ module.exports = class BrokerClient extends BrokerBase {
 
     this.isDuplicate = params.isDuplicate;
     this.parent = params.parent;
+    this.ssl = params.ssl;
     this.duplicates = new Set();
 
     // moduleName of the server (will be set when we receive a ping message)
@@ -125,11 +126,13 @@ module.exports = class BrokerClient extends BrokerBase {
       url = { hostname: options.host, port: options.port };
     }
 
-    const scheme = url.protocol === 'https:' ? 'wss' : 'ws';
+    const scheme = (url.protocol === 'https:' || this.ssl) ? 'wss' : 'ws';
 
     const webSocketURL = url.port
       ? `${scheme}://${url.hostname}:${url.port}${this.webSocketURL}`
       : `${scheme}://${url.hostname}${this.webSocketURL}`;
+
+    this.logger.info(`BrokerClient is connecting to ${webSocketURL}`);
 
     this.socket = new ws(webSocketURL);
     this.addSocketListeners();
@@ -272,9 +275,9 @@ module.exports = class BrokerClient extends BrokerBase {
         }
 
         case 'subscribe': {
-          const arr = message.eventName.split('.');
-          const eventName = arr.pop();
-          const targetModuleName = arr.join('.');
+          const [vendor, moduleName, ...rest] = message.eventName.split('.');
+          const eventName = rest.join('.');
+          const targetModuleName = [vendor, moduleName].join('.');
 
           if (this.moduleName === targetModuleName) {
             this.emit('subscribe', { eventName });
