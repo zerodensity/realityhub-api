@@ -134,7 +134,11 @@ module.exports = class BrokerClient extends BrokerBase {
 
     this.logger.info(`BrokerClient is connecting to ${webSocketURL}`);
 
+    const NODE_TLS_REJECT_UNAUTHORIZED = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;
     this.socket = new ws(webSocketURL);
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = NODE_TLS_REJECT_UNAUTHORIZED;
+
     this.addSocketListeners();
   }
 
