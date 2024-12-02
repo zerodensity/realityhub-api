@@ -18,6 +18,9 @@ const { v4: uuid } = require('uuid');
 const EventEmitter = require('events');
 const BrokerError = require('./BrokerError.js');
 const onceMultiple = require('./onceMultiple.js');
+const crypto = require('crypto');
+const fs = require('fs');
+const moment = require('moment');
 
 const DEFAULT_MAX_WS_PACKET_SIZE = 50 /*MB*/ * 1024 * 1024;
 
@@ -426,6 +429,15 @@ module.exports = class BrokerBase extends EventEmitter {
 
     if (packet.length > this.maxPacketSize) {
       this.logger.trace(new Error('MAX_WS_PACKET_SIZE'));
+    }
+
+    if (typeof process !== 'undefined') {
+      const hash = crypto.createHash('md5').update(packet).digest ('hex');
+      const ts = moment().format('YYYY-MM-DD HH:mm:ss.SSS');
+      const size = packet.length;
+      
+      const line = `${ts}||${socket._socket.localAddress}:${socket._socket.localPort}->${socket._socket.remoteAddress}:${socket._socket.remotePort}||${size}||${message.type}||${hash}||${packet}`;
+      // fs.appendFileSync('broker.log', line + '\n');
     }
 
     socket.send(packet);

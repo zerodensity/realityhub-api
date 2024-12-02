@@ -83,6 +83,21 @@ module.exports = class BrokerClient extends BrokerBase {
     if (this.isDuplicate) {
       this.connected = this.isConnected();
     }
+
+    if (typeof window !== 'undefined') {
+      if (!window.messageStatsTimer) {
+        window.messageStatsTimer = setInterval(() => {
+          console.log(`Stats: Total messages: ${window.totalMessages}`);
+          console.log(`Stats: Total message length: ${this.formatBytes(window.totalMessageLength)}KB`);
+          console.log(`Stats: Rate: ${this.formatBytes(window.totalMessageLength - (window.prevTotalMessageLength || 0))}KBps`);
+          window.prevTotalMessageLength = window.totalMessageLength;
+        }, 1000);
+      }
+    }
+  }
+
+  formatBytes(bytes) {
+    return (bytes / 1024).toFixed(2);
   }
 
   /**
@@ -234,6 +249,11 @@ module.exports = class BrokerClient extends BrokerBase {
    * @private
    */
   async handleMessage(rawMessage) {
+    if (typeof window !== 'undefined') {
+      window.totalMessages = (window.totalMessages || 0) + 1;
+      window.totalMessageLength = (window.totalMessageLength || 0) + rawMessage.length;
+    }
+
     let message;
 
     try {
