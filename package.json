@@ -1,6 +1,6 @@
 {
   "name": "@zerodensity/realityhub-api",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "description": "RealityHub API Javascript Implementation",
   "main": "src/index.js",
   "repository": {
