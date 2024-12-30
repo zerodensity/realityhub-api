@@ -30,72 +30,87 @@ BrokerClient.initModule({
   serverURL: '<your backend module>',
   hub: {
     host: '127.0.0.1',
-    port: 3000,
+    port: 80,
   },
 }).then((brokerClient) => {
   // brokerClient is connected to RealityHub and ready to use
 });
 ```
 
-### Listing the engines
+### Listing Reality 5 (API v1.2+) engines
 
 ```js
-brokerClient.api.hub.reality_world.listEngines()
+brokerClient.api.hub.reality5_1_2_world.listEngines()
   .then((engines) => {
     console.log(engines);
+
+    /**
+     * [
+     *    {
+     *      ip: '172.16.1.181',
+     *      port: 50052,
+     *      id: 79,
+     *      name: 'ZDHQ-HUB-AMPERE',
+     *      ready: true,
+     *      status: 'connected',
+     *      fps: '', // If there is no UE5 node, FPS will be an empty string
+     *      engineType: 'RE5_1_2'
+     *    }
+     *  ]
+     */
   })
   .catch((ex) => console.trace(ex));
 ```
 
-### Listing the nodes running on an engine
+### Listing the nodes running on an Reality 5 engine (API v1.2+)
 
 ```js
-brokerClient.api.hub.reality_world.getNodes(8 /* id of the engine */)
+brokerClient.api.hub.reality5_1_2_world.getNodes(79 /* id of the engine */)
   .then((nodes) => {
     console.log(nodes);
+
+    /**
+       * {
+       *    ...
+       *    // The keys are the NodePath
+       *    Cyclorama: {
+       *       ...
+       *       Functions: {
+       *        // The keys are the FunctionPath
+       *        'Cyclorama/AddProjection': {...},
+       *        'Cyclorama/ClearProjection': {...},
+       *       }
+       *       ...
+       *    }
+       *    ...
+       * }
+       */
+
+      // NOTE: For backward compatiblity, the NodePath and FunctionPath omit the leading '/'.
   })
   .catch((ex) => console.trace(ex));
 ```
 
-### Calling a Reality Node's Function
+### Calling a Node's Function
 
 You can use `callNodeFunction(params[, engineIds])` to call a node function. `engineIds` is an array
 of engine IDs. If `engineIds` is not supplied then the function will be called on all the engines.
 
 ```js
 /**
- * @typedef FunctionProperty
- * @type {object}
- * @property {string} NodePath
- * @property {string} PropertyPath
- * @property {object} payload
- * @property {*} payload.value
- */
-
-/**
- * Node_0's PLAY function is called
+ * Cyclorama's Add Projection function is called
  * @param {object} params
  * @param {string} params.NodePath
  * @param {string} params.PropertyPath
- * @param {FunctionProperty[]} [params.functionProperties] - (optional)
- * @param {number} [engineIds] - (optional)
+ * @param {number} [engineIds] - optional, default is all engines
  */ 
-brokerClient.api.hub.reality_world.callNodeFunction({
-  NodePath: 'Mixer Default',
-  PropertyPath: 'Default//DoTransition/0',
-  functionProperties: [
-    {
-      NodePath: 'Mixer Default',
-      PropertyPath: 'Default/DoTransition/Duration/0',
-      payload: {
-        value: 8,
-      },
-    },
-  ],
-}).catch((ex) => console.trace(ex));
+brokerClient.api.hub.reality5_1_2_world.callNodeFunction({
+  NodePath: '/Cyclorama',
+  FunctionPath: '/Cyclorama/AddProjection',
+}, [/* engine id = */ 79]).catch((ex) => console.trace(ex));
 ```
 
-### Setting a Reality Node's Property Value
+### Setting a Node's Property Value
 
 You can use `setNodeProperty(params[, engineIds])` to set a node's property value. `engineIds` is an
 array of engine IDs. If `engineIds` not supplied then all of the engines will receive the set node
@@ -107,36 +122,46 @@ property command.
  * @param {string} params.NodePath
  * @param {string} params.PropertyPath
  * @param {*} params.Value
- * @param {number} [params.Delay=0] - (optional) Delay in seconds
- * @param {number} [params.Duration=0] - (optional) Duration in seconds
- * @param {Jump|Linear|EaseIn|EaseOut|EaseInOut} [params.InterpType=Jump] - (optional)
  * @param {number} [engineIds] - (optional)
  */
-brokerClient.api.hub.reality_world.setNodeProperty({
-  NodePath: 'Mixer Default',
-  PropertyPath: 'Overlay Options//OverlayOpacity/0',
+brokerClient.api.hub.reality5_1_2_world.setNodeProperty({
+  NodePath: '/Add_f32',
+  PropertyPath: 'X',
   Value: 0.240,
-  InterpType: 'EaseOut',
-  Duration: 1,
-}).catch((ex) => console.trace(ex));
+}, [/* engine id = */ = 79]).catch((ex) => console.trace(ex));
 ```
 
-### Subscribing to Property Change Event
+### Interpolating a Node's Property Value
+
+You can use `interpolate(params[, engineIds])` to interpolate a node's property value. `engineIds` is an array of engine IDs. If `engineIds` not supplied then all of the engines will receive the same interpolate command.
 
 ```js
-// nodepropertyupdate event has a special sytax. You have to supply an engine id and the node's path in order to
-// subscribe to its property change events. The engine id, event name and node path are delitimed by 2 colons.
+brokerClient.api.hub.reality5_1_2_world.interpolate({
+  NodePath: '/Add_f32',
+  PropertyPath: 'X',
+  StartValue: 5.0, // optional, default is the current value
+  EndValue: 10.0,
+  Duration: 2000, // in milliseconds, optional, default is 0
+  Delay: 2000, // in milliseconds, optional, default is 0
 
-brokerClient.api.hub.reality_world.listEngines()
-  .then((engines) => engines[0].id)
-  .then((engineId) => {
-    brokerClient.api.hub.reality_world.on(`nodepropertyupdate::${engineId}::Mixer_0`, (eventData) => {
-      if (eventData.property.PropertyPath !== 'Overlay Options//OverlayOpacity/0') return;
+  /** @type {'Jump' | 'Linear' | 'EaseIn' | 'EaseOut' | 'EaseInOut'} */
+  InterpType: 'EaseIn', // optional, default is 'Jump'
+}, [/* engine id = */ 79]).catch((ex) => console.trace(ex));
+```
 
-      console.log('New value of overlay opacity is', eventData.property.Value);
-    });
-  })
-  .catch((ex) => console.trace(ex));
+### Getting a Node's Property Value
+
+You can use `getNodeProperty(params[, engineIds])` to get a node's property value. `engineIds` is an array of engine IDs. If `engineIds` not supplied then all of the engines will be queried. That is why this method returns an array of promises.
+
+```js
+brokerClient.api.hub.reality5_1_2_world.getNodeProperty(
+  { NodePath: '/Add_f32', PropertyPath: 'X', }, 
+  [/* engine id = */ 79]
+)
+.then((results) => {
+  console.log(results[0].Value);
+})
+.catch((ex) => console.trace(ex));
 ```
 
 ### Registering Your Own Methods to RealityHub
