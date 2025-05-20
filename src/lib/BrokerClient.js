@@ -313,9 +313,9 @@ module.exports = class BrokerClient extends BrokerBase {
         }
 
         case 'unsubscribe': {
-          const arr = message.eventName.split('.');
-          const eventName = arr.pop();
-          const targetModuleName = arr.join('.');
+          const [vendor, moduleName, ...rest] = message.eventName.split(".");
+          const eventName = rest.join(".");
+          const targetModuleName = [vendor, moduleName].join(".");
 
           if (this.moduleName === targetModuleName) {
             this.emit('unsubscribe', { eventName });
