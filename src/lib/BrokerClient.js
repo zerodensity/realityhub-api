@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with realityhub-api. If not, see <https://www.gnu.org/licenses/>.
 
-const { v4: uuid } = require('uuid');
-const BrokerBase = require('./BrokerBase.js');
-const BrokerError = require('./BrokerError.js');
-const RawRequest = require('./RawRequest.js');
-const consoleLogger = require('./consoleLogger.js');
-const onceMultiple = require('./onceMultiple.js');
+import { v4 as uuid } from 'uuid';
+import { BrokerBase } from './BrokerBase.js';
+import { BrokerError } from './BrokerError.js';
+import { RawRequest } from './RawRequest.js';
+import { consoleLogger } from './consoleLogger.js';
+import { onceMultiple } from './onceMultiple.js';
 
 let ws;
 

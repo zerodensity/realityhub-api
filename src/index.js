@@ -14,9 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with realityhub-api. If not, see <https://www.gnu.org/licenses/>.
 
-module.exports = {
-  BrokerBase: require('./lib/BrokerBase'),
-  BrokerClient: require('./lib/BrokerClient'),
-  BrokerError: require('./lib/BrokerError'),
-  RawRequest: require('./lib/RawRequest'),
-};
+export { BrokerBase } from './lib/BrokerBase.js';
+export { BrokerClient } from './lib/BrokerClient.js';
+export { BrokerError } from './lib/BrokerError.js';
+export { RawRequest } from './lib/RawRequest.js';

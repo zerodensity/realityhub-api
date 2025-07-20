@@ -14,10 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with realityhub-api. If not, see <https://www.gnu.org/licenses/>.
 
-const { v4: uuid } = require('uuid');
-const EventEmitter = require('events');
-const BrokerError = require('./BrokerError.js');
-const onceMultiple = require('./onceMultiple.js');
+import { v4 as uuid } from 'uuid';
+import { EventEmitter } from 'events';
+import { BrokerError } from './BrokerError.js';
+import { onceMultiple } from './onceMultiple.js';
 
 const DEFAULT_MAX_WS_PACKET_SIZE = 50 /*MB*/ * 1024 * 1024;
 
@@ -28,7 +28,7 @@ const DEFAULT_MAX_WS_PACKET_SIZE = 50 /*MB*/ * 1024 * 1024;
    * @param {number} [params.maxPacketSize] Maximum websocket packet size
    * @param {Logger} [params.logger] Logger instance
    */
-module.exports = class BrokerBase extends EventEmitter {
+export class BrokerBase extends EventEmitter {
   constructor(params) {
     super();
     this.moduleName = params.moduleName;

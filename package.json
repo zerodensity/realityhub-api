@@ -1,8 +1,15 @@
 {
   "name": "@zerodensity/realityhub-api",
-  "version": "1.16.0",
+  "version": "1.17.0",
   "description": "RealityHub API Javascript Implementation",
+  "type": "module",
   "main": "src/index.js",
+  "exports": {
+    ".": {
+      "import": "./src/index.js",
+      "require": "./src/index.cjs"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/zerodensity/realityhub-api.git"

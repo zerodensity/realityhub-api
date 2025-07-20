@@ -14,5 +14,4 @@
 // You should have received a copy of the GNU General Public License
 // along with realityhub-api. If not, see <https://www.gnu.org/licenses/>.
 
-class BrokerError extends Error { }
-module.exports = BrokerError;
+export class BrokerError extends Error { }

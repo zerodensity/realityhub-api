@@ -22,7 +22,7 @@ class TimeoutError extends Error {
   }
 }
 
-module.exports = function onceMultiple(target, eventNames, timeout = null) {
+export function onceMultiple(target, eventNames, timeout = null) {
   return new Promise((resolve, reject) => {
     let timer;
     let handler;

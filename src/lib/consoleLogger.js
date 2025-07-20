@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with realityhub-api. If not, see <https://www.gnu.org/licenses/>.
 
-module.exports = function consoleLogger(moduleName, options = { silent: false }) {
+export function consoleLogger(moduleName, options = { silent: false }) {
   const { silent } = options;
 
   return ['log', 'info', 'warn', 'error', 'trace', 'debug'].reduce((o, item) => {

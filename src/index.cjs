@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2021 Zero Density Inc.
+// Copyright (c) 2019-2025 Zero Density Inc.
 //
 // This file is part of realityhub-api.
 //
@@ -14,26 +14,4 @@
 // You should have received a copy of the GNU General Public License
 // along with realityhub-api. If not, see <https://www.gnu.org/licenses/>.
 
-export class RawRequest {
-  setCallback(callback) {
-    if (typeof callback !== 'function') {
-      throw new Error('callback must be a function.');
-    }
-
-    this.callback = callback;
-  }
-
-  setAncillaryData(ancillaryData) {
-    this.ancillaryData = ancillaryData || {};
-  }
-
-  getAncillaryData() {
-    return this.ancillaryData || {};
-  }
-
-  call(...args) {
-    if (this.callback) {
-      return this.callback(...args);
-    }
-  }
-}
+module.exports = require('./index.js');
