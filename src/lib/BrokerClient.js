@@ -21,17 +21,7 @@ import { RawRequest } from './RawRequest.js';
 import { consoleLogger } from './consoleLogger.js';
 import { onceMultiple } from './onceMultiple.js';
 
-let ws;
-
-const runningInBrowser = typeof window !== 'undefined';
-
-if (runningInBrowser) {
-  ws = WebSocket;
-} else {
-  ws = require('ws');
-}
-
-module.exports = class BrokerClient extends BrokerBase {
+export class BrokerClient extends BrokerBase {
   /**
    * BrokerClient constructor
    * @param {object} params Parameters
@@ -137,10 +127,10 @@ module.exports = class BrokerClient extends BrokerBase {
     if (typeof process !== "undefined" && process.versions != null && process.versions.node != null) {
       const NODE_TLS_REJECT_UNAUTHORIZED = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;
-      this.socket = new ws(webSocketURL);
+      this.socket = new WebSocket(webSocketURL);
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = NODE_TLS_REJECT_UNAUTHORIZED;
     } else {
-      this.socket = new ws(webSocketURL);
+      this.socket = new WebSocket(webSocketURL);
     }
     
     this.addSocketListeners();
@@ -441,7 +431,7 @@ module.exports = class BrokerClient extends BrokerBase {
       },
     );
 
-    if (socket.readyState !== ws.OPEN) {
+    if (socket.readyState !== WebSocket.OPEN) {
       try {
         await onceMultiple(this, ['connect'], webSocketMessage.timeout || this.messageTimeout);
       } catch (ex) {
