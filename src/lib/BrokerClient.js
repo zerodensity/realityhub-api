@@ -566,6 +566,8 @@ module.exports = class BrokerClient extends BrokerBase {
           duplicate.onClose();
         }
       }
+    } else {
+      this.emit('reconnectfailure');
     }
 
     setTimeout(() => this.connect(this.connectOptions), 1000);
