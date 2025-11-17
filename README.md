@@ -4,7 +4,7 @@ A helper module to connect third-party modules to RealityHub.
 
 ##  Support Requests
 
-This repository is for distribution only. For support please visit: [Zero Density Support](https://support.zerodensity.io).
+This repository is for distribution only. For support please visit: [Zero Density Support](https://docs.zerodensity.io/reality/reality-hub-developers-guide/reality-hub-open-source-sdk).
 
 ## Installation
 
