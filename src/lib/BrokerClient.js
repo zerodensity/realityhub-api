@@ -3,7 +3,7 @@
 // This file is part of realityhub-api.
 //
 // realityhub-api is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License version 2, as published by 
+// it under the terms of the GNU General Public License version 2, as published by
 // the Free Software Foundation.
 //
 // realityhub-api is distributed in the hope that it will be useful,
@@ -14,24 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with realityhub-api. If not, see <https://www.gnu.org/licenses/>.
 
-const { v4: uuid } = require('uuid');
-const BrokerBase = require('./BrokerBase.js');
-const BrokerError = require('./BrokerError.js');
-const RawRequest = require('./RawRequest.js');
-const consoleLogger = require('./consoleLogger.js');
-const onceMultiple = require('./onceMultiple.js');
+import { v4 as uuid } from 'uuid';
+import BrokerBase from './BrokerBase.js';
+import BrokerError from './BrokerError.js';
+import RawRequest from './RawRequest.js';
+import consoleLogger from './consoleLogger.js';
+import onceMultiple from './onceMultiple.js';
+import WebSocket from 'ws';
 
-let ws;
+const WS = typeof window !== 'undefined' ? window.WebSocket : WebSocket;
 
-const runningInBrowser = typeof window !== 'undefined';
-
-if (runningInBrowser) {
-  ws = WebSocket;
-} else {
-  ws = require('ws');
-}
-
-module.exports = class BrokerClient extends BrokerBase {
+export default class BrokerClient extends BrokerBase {
   /**
    * BrokerClient constructor
    * @param {object} params Parameters
@@ -47,13 +40,7 @@ module.exports = class BrokerClient extends BrokerBase {
 
     this.setMaxListeners(20);
 
-    for (const func of [
-      this.onOpen,
-      this.onClose,
-      this.onError,
-      this.connect,
-      this.onSocketMessage,
-    ]) {
+    for (const func of [this.onOpen, this.onClose, this.onError, this.connect, this.onSocketMessage]) {
       const name = func.name;
       this[name] = func.bind(this);
     }
@@ -126,7 +113,7 @@ module.exports = class BrokerClient extends BrokerBase {
       url = { hostname: options.host, port: options.port };
     }
 
-    const scheme = (url.protocol === 'https:' || this.ssl) ? 'wss' : 'ws';
+    const scheme = url.protocol === 'https:' || this.ssl ? 'wss' : 'ws';
 
     const webSocketURL = url.port
       ? `${scheme}://${url.hostname}:${url.port}${this.webSocketURL}`
@@ -134,22 +121,22 @@ module.exports = class BrokerClient extends BrokerBase {
 
     this.logger.info(`BrokerClient is connecting to ${webSocketURL}`);
 
-    if (typeof process !== "undefined" && process.versions != null && process.versions.node != null) {
+    if (typeof process !== 'undefined' && process.versions != null && process.versions.node != null) {
       const NODE_TLS_REJECT_UNAUTHORIZED = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;
-      this.socket = new ws(`${webSocketURL}?module=true`);
+      this.socket = new WS(`${webSocketURL}?module=true`);
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = NODE_TLS_REJECT_UNAUTHORIZED;
     } else {
-      this.socket = new ws(webSocketURL);
+      this.socket = new WS(webSocketURL);
     }
-    
+
     this.addSocketListeners();
   }
 
   /**
    * Duplicates a BrokerClient in order to share the same WebSocket.
    * @param {object} params Parameters
-   * @param {string} params.moduleName Module name of the duplicate BrokerClient (a duplicate 
+   * @param {string} params.moduleName Module name of the duplicate BrokerClient (a duplicate
    * can have a different name than its parent)
    * @returns {BrokerClient}
    */
@@ -181,12 +168,10 @@ module.exports = class BrokerClient extends BrokerBase {
     duplicate.on('destroy', () => duplicates.delete(duplicate));
     duplicates.add(duplicate);
 
-    duplicate
-      .ping()
-      .catch((ex) => {
-        console.error(`Failed to send ping`);
-        console.trace(ex.message);
-      });
+    duplicate.ping().catch((ex) => {
+      console.error(`Failed to send ping`);
+      console.trace(ex.message);
+    });
 
     return duplicate;
   }
@@ -301,21 +286,20 @@ module.exports = class BrokerClient extends BrokerBase {
               }
             }
 
-            await this.sendResponse(
-              socket,
-              message,
-              false,
-              [{ error: `${message.eventName} sent to ${this.moduleName}. This is probably a mistake.` }],
-            );
+            await this.sendResponse(socket, message, false, [
+              {
+                error: `${message.eventName} sent to ${this.moduleName}. This is probably a mistake.`,
+              },
+            ]);
           }
 
           break;
         }
 
         case 'unsubscribe': {
-          const [vendor, moduleName, ...rest] = message.eventName.split(".");
-          const eventName = rest.join(".");
-          const targetModuleName = [vendor, moduleName].join(".");
+          const [vendor, moduleName, ...rest] = message.eventName.split('.');
+          const eventName = rest.join('.');
+          const targetModuleName = [vendor, moduleName].join('.');
 
           if (this.moduleName === targetModuleName) {
             this.emit('unsubscribe', { eventName });
@@ -331,12 +315,11 @@ module.exports = class BrokerClient extends BrokerBase {
               }
             }
 
-            await this.sendResponse(
-              socket,
-              message,
-              false,
-              [{ error: `${message.eventName} sent to ${this.moduleName}. This is probably a mistake.` }],
-            );
+            await this.sendResponse(socket, message, false, [
+              {
+                error: `${message.eventName} sent to ${this.moduleName}. This is probably a mistake.`,
+              },
+            ]);
           }
 
           break;
@@ -371,12 +354,11 @@ module.exports = class BrokerClient extends BrokerBase {
 
         default: {
           if (!this.apiHandlers.has(message.type)) {
-            await this.sendResponse(
-              socket,
-              message,
-              false,
-              [{ error: `There is no handler registered for this type of message: ${message.type}` }],
-            );
+            await this.sendResponse(socket, message, false, [
+              {
+                error: `There is no handler registered for this type of message: ${message.type}`,
+              },
+            ]);
             return;
           }
 
@@ -425,23 +407,19 @@ module.exports = class BrokerClient extends BrokerBase {
   /**
    * Sends a message.
    * @async
-   * @param {object} message 
+   * @param {object} message
    * @returns {Promise.<Array, Error>}
    */
   async sendMessage(message) {
     const id = uuid();
     const socket = this.isDuplicate ? this.parent.getSocket() : this.socket;
-    const webSocketMessage = Object.assign(
-      {},
-      message,
-      {
-        id,
-        time: new Date().valueOf(),
-        moduleName: this.moduleName,
-      },
-    );
+    const webSocketMessage = Object.assign({}, message, {
+      id,
+      time: new Date().valueOf(),
+      moduleName: this.moduleName,
+    });
 
-    if (socket.readyState !== ws.OPEN) {
+    if (socket.readyState !== WS.OPEN) {
       try {
         await onceMultiple(this, ['connect'], webSocketMessage.timeout || this.messageTimeout);
       } catch (ex) {
@@ -488,18 +466,13 @@ module.exports = class BrokerClient extends BrokerBase {
    */
   resubscribeModuleEvents() {
     for (const eventName of this.events.keys()) {
-      const moduleName = eventName
-        .split('.')
-        .slice(0, 2)
-        .join('.');
+      const moduleName = eventName.split('.').slice(0, 2).join('.');
 
-      this
-        .sendMessage({
-          type: 'subscribe',
-          eventName,
-          targetModuleName: moduleName,
-        })
-        .catch(new Function());
+      this.sendMessage({
+        type: 'subscribe',
+        eventName,
+        targetModuleName: moduleName,
+      }).catch(new Function());
     }
   }
 
@@ -532,7 +505,7 @@ module.exports = class BrokerClient extends BrokerBase {
 
   /**
    * @private
-   * @param {ErrorEvent} err 
+   * @param {ErrorEvent} err
    */
   onError(err) {
     if (err.error instanceof Error) {
@@ -656,13 +629,13 @@ module.exports = class BrokerClient extends BrokerBase {
     }
   }
 
-  /** 
+  /**
    * Register a module's API handlers to RealityHub
    * @async
-   * @param {Object.<string, function>} handlers Key will be registered to the API tree. 
+   * @param {Object.<string, function>} handlers Key will be registered to the API tree.
    * @param {*} [context=null] Handlers' `this` will be set to this context.
-   * The value (function) will handle the API calls. 
-   * @param {string} [remote='hub.core'] Remote 
+   * The value (function) will handle the API calls.
+   * @param {string} [remote='hub.core'] Remote
    * @example
    * // server.js
    * brokerClient.registerAPIHandlers(this, {
@@ -670,7 +643,7 @@ module.exports = class BrokerClient extends BrokerBase {
    *     return number1 + number2;
    *   },
    * }).catch((ex) => console.trace(ex));
-   * 
+   *
    * // client.js
    * brokerClient.api.moduleVendor.moduleName.addNumber(3, 5)
    *   .then((result) => {
@@ -701,8 +674,8 @@ module.exports = class BrokerClient extends BrokerBase {
    * RealityHub will look for an `index.js` file in this path. This script file will be imported
    * by RealityHub's `index.html` via a `<script type="module">` tag. Relative paths in your scripts
    * will be proxied by RealityHub.
-   * @param {string} [params.webSocketURL="/core"] WebSocket URL to connect. RealityHub's API Server 
-   * is serving at `/core` by default. *(Default: /core)* 
+   * @param {string} [params.webSocketURL="/core"] WebSocket URL to connect. RealityHub's API Server
+   * is serving at `/core` by default. *(Default: /core)*
    * @param {{ host: string, port: number }} params.hub RealityHub connection parameters
    * @param {string} params.hub.host RealityHub hostname or IP address
    * @param {string} params.hub.port RealityHub port
@@ -716,7 +689,12 @@ module.exports = class BrokerClient extends BrokerBase {
     await hubClient.getConnectPromise();
     if (!serverURL) return hubClient;
 
-    await hubClient.api.hub.core.registerProxyURL({ moduleName, serverURL, clientModuleName, menuTitle });
+    await hubClient.api.hub.core.registerProxyURL({
+      moduleName,
+      serverURL,
+      clientModuleName,
+      menuTitle,
+    });
     return hubClient;
   }
 }

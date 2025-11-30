@@ -1,8 +1,22 @@
 {
   "name": "@zerodensity/realityhub-api",
-  "version": "1.20.0",
+  "version": "2.0.1",
   "description": "RealityHub API Javascript Implementation",
-  "main": "src/index.js",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "rollup -c"
+  },
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/zerodensity/realityhub-api.git"
@@ -30,7 +44,16 @@
   },
   "homepage": "https://github.com/zerodensity/realityhub-api#readme",
   "dependencies": {
-    "uuid": "^11.0.3",
-    "ws": "^8.18.0"
+    "uuid": "^13.0.0",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^29.0.0",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "rollup": "^4.53.3"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.53.3"
   }
 }

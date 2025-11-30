@@ -3,7 +3,7 @@
 // This file is part of realityhub-api.
 //
 // realityhub-api is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License version 2, as published by 
+// it under the terms of the GNU General Public License version 2, as published by
 // the Free Software Foundation.
 //
 // realityhub-api is distributed in the hope that it will be useful,
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with realityhub-api. If not, see <https://www.gnu.org/licenses/>.
 
-module.exports = function consoleLogger(moduleName, options = { silent: false }) {
+export default function consoleLogger(moduleName, options = { silent: false }) {
   const { silent } = options;
 
   return ['log', 'info', 'warn', 'error', 'trace', 'debug'].reduce((o, item) => {
@@ -27,13 +27,13 @@ module.exports = function consoleLogger(moduleName, options = { silent: false })
       }
 
       if (['trace', 'debug'].includes(item)) {
-        for (const arg of (args || [])) {
+        for (const arg of args || []) {
           console.log(arg);
         }
       }
 
       return console[item](...args);
-    }
+    };
     return o;
   }, {});
-};
+}

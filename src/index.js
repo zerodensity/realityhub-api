@@ -3,7 +3,7 @@
 // This file is part of realityhub-api.
 //
 // realityhub-api is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License version 2, as published by 
+// it under the terms of the GNU General Public License version 2, as published by
 // the Free Software Foundation.
 //
 // realityhub-api is distributed in the hope that it will be useful,
@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with realityhub-api. If not, see <https://www.gnu.org/licenses/>.
 
-module.exports = {
-  BrokerBase: require('./lib/BrokerBase'),
-  BrokerClient: require('./lib/BrokerClient'),
-  BrokerError: require('./lib/BrokerError'),
-  RawRequest: require('./lib/RawRequest'),
-};
+import BrokerBase from './lib/BrokerBase.js';
+import BrokerClient from './lib/BrokerClient.js';
+import BrokerError from './lib/BrokerError.js';
+import RawRequest from './lib/RawRequest.js';
+
+export { BrokerBase, BrokerClient, BrokerError, RawRequest };

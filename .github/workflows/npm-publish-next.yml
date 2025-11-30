@@ -11,9 +11,17 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           registry-url: https://registry.npmjs.org/
-      - run: npm ci
+      - run: npm ci --ignore-scripts
+      - run: npm run build
       - run: npm publish --tag next
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+      - name: Create Git Tag
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag v$VERSION
+          git push origin v$VERSION

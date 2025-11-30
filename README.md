@@ -2,7 +2,7 @@
 
 A helper module to connect third-party modules to RealityHub.
 
-##  Support Requests
+## Support Requests
 
 This repository is for distribution only. For support please visit: [Zero Density Support](https://support.zerodensity.io).
 
@@ -21,7 +21,7 @@ The client can be bundled for browsers with a bundling tool (e.g. rollup).
 ### Connecting to Hub
 
 ```js
-const { BrokerClient } = require('@zerodensity/realityhub-api');
+import { BrokerClient } from '@zerodensity/realityhub-api';
 
 BrokerClient.initModule({
   menuTitle: '<menu title>',
@@ -40,7 +40,8 @@ BrokerClient.initModule({
 ### Listing Reality 5 (API v1.2+) engines
 
 ```js
-brokerClient.api.hub.reality5_1_2_world.listEngines()
+brokerClient.api.hub.reality5_1_2_world
+  .listEngines()
   .then((engines) => {
     console.log(engines);
 
@@ -65,28 +66,29 @@ brokerClient.api.hub.reality5_1_2_world.listEngines()
 ### Listing the nodes running on an Reality 5 engine (API v1.2+)
 
 ```js
-brokerClient.api.hub.reality5_1_2_world.getNodes(79 /* id of the engine */)
+brokerClient.api.hub.reality5_1_2_world
+  .getNodes(79 /* id of the engine */)
   .then((nodes) => {
     console.log(nodes);
 
     /**
-       * {
-       *    ...
-       *    // The keys are the NodePath
-       *    Cyclorama: {
-       *       ...
-       *       Functions: {
-       *        // The keys are the FunctionPath
-       *        'Cyclorama/AddProjection': {...},
-       *        'Cyclorama/ClearProjection': {...},
-       *       }
-       *       ...
-       *    }
-       *    ...
-       * }
-       */
+     * {
+     *    ...
+     *    // The keys are the NodePath
+     *    Cyclorama: {
+     *       ...
+     *       Functions: {
+     *        // The keys are the FunctionPath
+     *        'Cyclorama/AddProjection': {...},
+     *        'Cyclorama/ClearProjection': {...},
+     *       }
+     *       ...
+     *    }
+     *    ...
+     * }
+     */
 
-      // NOTE: For backward compatiblity, the NodePath and FunctionPath omit the leading '/'.
+    // NOTE: For backward compatiblity, the NodePath and FunctionPath omit the leading '/'.
   })
   .catch((ex) => console.trace(ex));
 ```
@@ -103,11 +105,16 @@ of engine IDs. If `engineIds` is not supplied then the function will be called o
  * @param {string} params.NodePath
  * @param {string} params.PropertyPath
  * @param {number} [engineIds] - optional, default is all engines
- */ 
-brokerClient.api.hub.reality5_1_2_world.callNodeFunction({
-  NodePath: '/Cyclorama',
-  FunctionPath: '/Cyclorama/AddProjection',
-}, [/* engine id = */ 79]).catch((ex) => console.trace(ex));
+ */
+brokerClient.api.hub.reality5_1_2_world
+  .callNodeFunction(
+    {
+      NodePath: '/Cyclorama',
+      FunctionPath: '/Cyclorama/AddProjection',
+    },
+    [/* engine id = */ 79]
+  )
+  .catch((ex) => console.trace(ex));
 ```
 
 ### Setting a Node's Property Value
@@ -136,17 +143,22 @@ brokerClient.api.hub.reality5_1_2_world.setNodeProperty({
 You can use `interpolate(params[, engineIds])` to interpolate a node's property value. `engineIds` is an array of engine IDs. If `engineIds` not supplied then all of the engines will receive the same interpolate command.
 
 ```js
-brokerClient.api.hub.reality5_1_2_world.interpolate({
-  NodePath: '/Add_f32',
-  PropertyPath: 'X',
-  StartValue: 5.0, // optional, default is the current value
-  EndValue: 10.0,
-  Duration: 2000, // in milliseconds, optional, default is 0
-  Delay: 2000, // in milliseconds, optional, default is 0
+brokerClient.api.hub.reality5_1_2_world
+  .interpolate(
+    {
+      NodePath: '/Add_f32',
+      PropertyPath: 'X',
+      StartValue: 5.0, // optional, default is the current value
+      EndValue: 10.0,
+      Duration: 2000, // in milliseconds, optional, default is 0
+      Delay: 2000, // in milliseconds, optional, default is 0
 
-  /** @type {'Jump' | 'Linear' | 'EaseIn' | 'EaseOut' | 'EaseInOut'} */
-  InterpType: 'EaseIn', // optional, default is 'Jump'
-}, [/* engine id = */ 79]).catch((ex) => console.trace(ex));
+      /** @type {'Jump' | 'Linear' | 'EaseIn' | 'EaseOut' | 'EaseInOut'} */
+      InterpType: 'EaseIn', // optional, default is 'Jump'
+    },
+    [/* engine id = */ 79]
+  )
+  .catch((ex) => console.trace(ex));
 ```
 
 ### Getting a Node's Property Value
@@ -154,14 +166,12 @@ brokerClient.api.hub.reality5_1_2_world.interpolate({
 You can use `getNodeProperty(params[, engineIds])` to get a node's property value. `engineIds` is an array of engine IDs. If `engineIds` not supplied then all of the engines will be queried. That is why this method returns an array of promises.
 
 ```js
-brokerClient.api.hub.reality5_1_2_world.getNodeProperty(
-  { NodePath: '/Add_f32', PropertyPath: 'X', }, 
-  [/* engine id = */ 79]
-)
-.then((results) => {
-  console.log(results[0].Value);
-})
-.catch((ex) => console.trace(ex));
+brokerClient.api.hub.reality5_1_2_world
+  .getNodeProperty({ NodePath: '/Add_f32', PropertyPath: 'X' }, [/* engine id = */ 79])
+  .then((results) => {
+    console.log(results[0].Value);
+  })
+  .catch((ex) => console.trace(ex));
 ```
 
 ### Registering Your Own Methods to RealityHub
@@ -194,28 +204,29 @@ function longTask(taskDuration) {
 }
 
 // Let's register these as our API methods
-brokerClient.api.exampleCompany.exampleModule.registerAPIHandlers({
-  addNumbers,  
-  multiplyNumbers,
-  performSlowTask: longTask,
-}).catch((ex) => console.trace(ex));
+brokerClient.api.exampleCompany.exampleModule
+  .registerAPIHandlers({
+    addNumbers,
+    multiplyNumbers,
+    performSlowTask: longTask,
+  })
+  .catch((ex) => console.trace(ex));
 ```
 
 ```js
 // client.js
-brokerClient.api.exampleCompany.exampleModule.addNumbers(3, 5)
-  .then((result) => {
-    console.log('The result of addNumbers() is', result);
-  });
+brokerClient.api.exampleCompany.exampleModule.addNumbers(3, 5).then((result) => {
+  console.log('The result of addNumbers() is', result);
+});
 
-brokerClient.api.exampleCompany.exampleModule.performAsyncMultiplication(3, 5)
-  .then((result) => {
-    console.log('The result of performAsyncMultiplication() is', result);
-  });
+brokerClient.api.exampleCompany.exampleModule.performAsyncMultiplication(3, 5).then((result) => {
+  console.log('The result of performAsyncMultiplication() is', result);
+});
 
 // Default timeout for API requests is 2 seconds. We need to specify a longer timeout for our slow async task.
 const timeout = 10 * 1000; // 10 seconds
-brokerClient.api.exampleCompany.exampleModule.callTimeout(timeout)
+brokerClient.api.exampleCompany.exampleModule
+  .callTimeout(timeout)
   .slowAsyncTask(5)
   .then((result) => console.log('Slow async task returned:', result));
 ```
@@ -229,7 +240,7 @@ brokerClient.api.exampleCompany.exampleModule.callTimeout(timeout)
 setInterval(() => {
   // A random number between 0 and 1000.
   const randomNumber = Math.round(Math.random() * 1000);
-  brokerClient.api.exampleCompany.exampleModule.emit('randomnumber', randomNumber);  
+  brokerClient.api.exampleCompany.exampleModule.emit('randomnumber', randomNumber);
 }, 1000);
 ```
 
@@ -238,7 +249,7 @@ setInterval(() => {
 
 brokerClient.api.exampleCompany.exampleModule.on('randomnumber', (randomNumber) => {
   console.log('Received a random number from the server', randomNumber);
-});  
+});
 ```
 
 ### Questions and Feedback

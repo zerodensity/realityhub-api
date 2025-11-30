@@ -3,7 +3,7 @@
 // This file is part of realityhub-api.
 //
 // realityhub-api is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License version 2, as published by 
+// it under the terms of the GNU General Public License version 2, as published by
 // the Free Software Foundation.
 //
 // realityhub-api is distributed in the hope that it will be useful,
@@ -22,7 +22,7 @@ class TimeoutError extends Error {
   }
 }
 
-module.exports = function onceMultiple(target, eventNames, timeout = null) {
+export default function onceMultiple(target, eventNames, timeout = null) {
   return new Promise((resolve, reject) => {
     let timer;
     let handler;
