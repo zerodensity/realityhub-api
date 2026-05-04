@@ -44,7 +44,7 @@
   },
   "homepage": "https://github.com/zerodensity/realityhub-api#readme",
   "dependencies": {
-    "uuid": "^13.0.0",
+    "uuid": "^14.0.0",
     "ws": "^8.18.3"
   },
   "devDependencies": {
