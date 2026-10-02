@@ -17,5 +17,5 @@ jobs:
         with:
           node-version: '20'
           registry-url: https://registry.npmjs.org/
-      - run: npm ci
-      - run: npm publish
+      - run: npm ci --ignore-scripts
+      - run: npm publish --tag stable
