@@ -8,7 +8,6 @@ const copy = (value) => JSON.parse(JSON.stringify(value));
  * @property {Object|null} state Latest authoritative field state.
  * @property {*} value Latest controller/form output.
  * @property {boolean} readOnly
- * @property {Object} options
  * @property {Object} context
  * @property {boolean} backend
  * @property {boolean} paused
@@ -56,7 +55,6 @@ function createClient({ window: target = window, timeoutMs = 15000 } = {}) {
     state: null,
     value: null,
     readOnly: true,
-    options: {},
     context: {},
     backend: Boolean(backend),
     paused: false,
@@ -176,7 +174,6 @@ function createClient({ window: target = window, timeoutMs = 15000 } = {}) {
       initialized = true;
       update({
         readOnly: Boolean(message.readOnly),
-        options: message.options || {},
         context: message.context || {},
         paused: Boolean(message.paused),
         connection: backend ? backendConnection : 'connected',

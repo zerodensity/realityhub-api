@@ -22,7 +22,6 @@ const { EventEmitter } = require('node:events');
  *
  * @typedef {Object} BackendAPI Injected into the partner's exported start(api).
  * @property {number} apiVersion
- * @property {Object} options
  * @property {Object} context
  * @property {function(string, Function): void} export Register a frontend-callable function.
  * @property {function(string, *=): void} emit Send a custom event to attached frontends.
@@ -45,12 +44,11 @@ const { EventEmitter } = require('node:events');
  * Create the API used by a Hub worker container or an isolated test harness.
  * @param {Object} configuration
  * @param {Snapshot} configuration.snapshot
- * @param {Object} [configuration.options]
  * @param {Object} [configuration.context]
  * @param {function(string, Object): Promise<*>} configuration.request Platform request transport.
  * @param {function(string, *): void} configuration.emit Platform event transport.
  */
-function createBackendRuntime({ snapshot: initial, options = {}, context = {}, request, emit }) {
+function createBackendRuntime({ snapshot: initial, context = {}, request, emit }) {
   const methods = new Map();
   const events = new EventEmitter();
   const stateListeners = new Set();
@@ -137,7 +135,6 @@ function createBackendRuntime({ snapshot: initial, options = {}, context = {}, r
   /** @type {BackendAPI} */
   const api = {
     apiVersion: 1,
-    options,
     context,
     export: (name, handler) => {
       if (typeof name !== 'string' || !name || typeof handler !== 'function' || name === 'getState') {
