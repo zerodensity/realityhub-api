@@ -12,6 +12,7 @@ const { EventEmitter } = require('node:events');
  * @property {*} data
  * @property {string|null} [error]
  * @property {boolean} [stale]
+ * @property {string} [status] `disabled` when the host intentionally stops source traffic.
  *
  * @typedef {Object} Subscription
  * @property {function(): void} stop
@@ -34,6 +35,7 @@ const { EventEmitter } = require('node:events');
  * @property {function(Object|null): Promise<Snapshot>} setState
  * @property {function(Function): void} schedule Queue background work after the current handler/startup.
  * @property {Object} data Named query bindings configured on the field.
+ * @property {boolean} data.enabled Whether bound query traffic is enabled for this field.
  * @property {function(string, Object=): Promise<DataSnapshot>} data.request
  * @property {function(string, Object, Function, Function=): Subscription} data.subscribe Legacy direct callbacks.
  * @property {function(string, Object, Function, Function=): Watch} data.watch Await callbacks in the handler queue.
@@ -173,6 +175,7 @@ function createBackendRuntime({ snapshot: initial, context = {}, request, emit }
       enqueue(operation).catch(report);
     },
     data: {
+      enabled: context.dataSourceEnabled !== false,
       request: (query, parameters = {}) => request('data.request', { query, parameters }),
       subscribe,
       watch,
