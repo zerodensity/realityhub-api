@@ -11,7 +11,6 @@ const copy = (value) => JSON.parse(JSON.stringify(value));
  * @property {Object} context
  * @property {boolean} backend
  * @property {boolean} paused
- * @property {boolean} dataSourceEnabled
  * @property {'connecting'|'connected'|'disconnected'|'closed'|'error'} connection
  * @property {string|null} error
  *
@@ -59,7 +58,6 @@ function createClient({ window: target = window, timeoutMs = 15000 } = {}) {
     context: {},
     backend: Boolean(backend),
     paused: false,
-    dataSourceEnabled: true,
     connection: 'connecting',
     error: null,
   };
@@ -178,7 +176,6 @@ function createClient({ window: target = window, timeoutMs = 15000 } = {}) {
         readOnly: Boolean(message.readOnly),
         context: message.context || {},
         paused: Boolean(message.paused),
-        dataSourceEnabled: message.dataSourceEnabled !== false,
         connection: backend ? backendConnection : 'connected',
         ...(!backend ? { state: message.state || null, value: message.value === undefined ? null : message.value } : {}),
       });
