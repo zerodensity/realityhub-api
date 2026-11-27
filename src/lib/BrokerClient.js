@@ -31,6 +31,39 @@ if (runningInBrowser) {
   ws = require('ws');
 }
 
+// Parsed JSON containers are private to each logical client. Strings (including
+// large encoded payloads) can be reused without reparsing or copying their bytes.
+function cloneMessageValue(value) {
+  if (value === null || typeof value !== 'object') return value;
+
+  const clone = Array.isArray(value) ? [] : {};
+  const pending = [{ source: value, target: clone }];
+
+  while (pending.length) {
+    const { source, target } = pending.pop();
+
+    for (const key of Object.keys(source)) {
+      const child = source[key];
+      let copy = child;
+
+      if (child !== null && typeof child === 'object') {
+        copy = Array.isArray(child) ? [] : {};
+        pending.push({ source: child, target: copy });
+      }
+
+      // Define own properties so a JSON "__proto__" key stays ordinary data.
+      Object.defineProperty(target, key, {
+        value: copy,
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      });
+    }
+  }
+
+  return clone;
+}
+
 module.exports = class BrokerClient extends BrokerBase {
   /**
    * BrokerClient constructor
@@ -221,7 +254,7 @@ module.exports = class BrokerClient extends BrokerBase {
 
   async onSocketMessage(event) {
     try {
-      await this.handleMessage(event.data, this.socket);
+      await this.handleMessage(event.data);
     } catch (ex) {
       console.trace(ex);
     }
@@ -234,20 +267,34 @@ module.exports = class BrokerClient extends BrokerBase {
    * @private
    */
   async handleMessage(rawMessage) {
-    let message;
-
     try {
-      message = JSON.parse(rawMessage);
+      await this.handleParsedMessage(JSON.parse(rawMessage));
+    } catch (ex) {
+      console.trace(ex);
+    }
+  }
+
+  /**
+   * Dispatches an already parsed message without exposing it to event handlers.
+   * @param {object} message Parsed message
+   * @async
+   * @private
+   */
+  async handleParsedMessage(message) {
+    try {
       const socket = this.isDuplicate ? this.parent.getSocket() : this.socket;
 
       switch (message.type) {
         case 'response': {
-          this.emit(`response::${message.requestId}`, message);
+          const eventName = `response::${message.requestId}`;
+          if (this.listenerCount(eventName)) {
+            this.emit(eventName, cloneMessageValue(message));
+          }
 
           // Send the response to other duplicates (if we are parent)
           if (!this.isDuplicate) {
             for (const duplicate of this.duplicates) {
-              duplicate.handleMessage(rawMessage);
+              duplicate.handleParsedMessage(message);
             }
           }
 
@@ -257,10 +304,11 @@ module.exports = class BrokerClient extends BrokerBase {
         case 'event': {
           // Run previously registered event handlers
           for (const [subscribedEvent, entries] of this.events.entries()) {
-            if (subscribedEvent === message.eventName) {
+            if (subscribedEvent === message.eventName && entries.length) {
+              const data = cloneMessageValue(message.data);
               for (const entry of entries) {
                 try {
-                  entry.eventHandler(...message.data);
+                  entry.eventHandler(...data);
                 } catch (ex) {
                   this.logger.warn(ex);
                 } finally {
@@ -275,7 +323,7 @@ module.exports = class BrokerClient extends BrokerBase {
           // Send the event to other duplicates (if we are parent)
           if (!this.isDuplicate) {
             for (const duplicate of this.duplicates) {
-              duplicate.handleMessage(rawMessage);
+              duplicate.handleParsedMessage(message);
             }
           }
 
@@ -295,7 +343,7 @@ module.exports = class BrokerClient extends BrokerBase {
             if (!this.isDuplicate) {
               for (const duplicate of this.duplicates) {
                 if (duplicate.moduleName === targetModuleName) {
-                  duplicate.handleMessage(rawMessage);
+                  duplicate.handleParsedMessage(message);
                   return;
                 }
               }
@@ -325,7 +373,7 @@ module.exports = class BrokerClient extends BrokerBase {
             if (!this.isDuplicate) {
               for (const duplicate of this.duplicates) {
                 if (duplicate.moduleName === targetModuleName) {
-                  duplicate.handleMessage(rawMessage);
+                  duplicate.handleParsedMessage(message);
                   return;
                 }
               }
@@ -348,7 +396,7 @@ module.exports = class BrokerClient extends BrokerBase {
           if (!this.isDuplicate && message.targetModuleName !== this.moduleName) {
             for (const duplicate of this.duplicates) {
               if (duplicate.moduleName === message.targetModuleName) {
-                duplicate.handleMessage(rawMessage);
+                duplicate.handleParsedMessage(message);
                 return;
               }
             }
